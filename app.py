@@ -61,6 +61,14 @@ with st.sidebar:
 # ── Data loader ───────────────────────────────────────────────────────────────
 @st.cache_data(show_spinner="⏳ Loading dataset… this may take a moment for large files.")
 def load_data():
+    import gdown
+    import os
+    if not os.path.exists("airline_preprocessed.csv"):
+        gdown.download(
+            "https://drive.google.com/uc?id=15MUVA8V4qoEvCauprcFXNFa3A1iezjOl",
+            "airline_preprocessed.csv",
+            quiet=False
+        )
     df = pd.read_csv("airline_preprocessed.csv", low_memory=False)
     df.columns = df.columns.str.strip()
     if 'ROUTE' not in df.columns and 'ORIGIN_AIRPORT' in df.columns:

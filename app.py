@@ -56,12 +56,12 @@ with st.sidebar:
 @st.cache_data(show_spinner="⏳ Loading dataset… please wait.")
 def load_data():
     import gdown
-    FILE_ID = "15MUVA8V4qoEvCauprcFXNFa3A1iezjOl"
-    dest = "airline_preprocessed.csv"
+    FILE_ID = "1CJnrsH1m1D_hwjUsDDccByuXdrwVWLG8"
+    dest = "airline_preprocessed.csv.gz"
     if not os.path.exists(dest):
         st.info("📥 Downloading data from Google Drive...")
         gdown.download(f"https://drive.google.com/uc?id={FILE_ID}", dest, quiet=False)
-    df = pd.read_csv(dest, low_memory=False)
+    df = pd.read_csv(dest, low_memory=False, compression="gzip")
     df.columns = df.columns.str.strip()
     if 'ROUTE' not in df.columns and 'ORIGIN_AIRPORT' in df.columns:
         df['ROUTE'] = df['ORIGIN_AIRPORT'].astype(str) + '_' + df['DESTINATION_AIRPORT'].astype(str)

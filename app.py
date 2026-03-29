@@ -105,15 +105,22 @@ if "Overview" in page:
     st.markdown('<p class="page-sub">Week 7 — Visual Report · 2015 US Domestic Flights</p>', unsafe_allow_html=True)
 
     if data_ready:
+        # Show actual columns for debugging
+        st.info(f"✅ Data loaded! Columns: {list(data.columns[:10])}")
+        airline_col = [c for c in data.columns if 'AIRLINE' in c.upper()]
+        route_col   = [c for c in data.columns if 'ROUTE' in c.upper()]
+        cancel_col  = [c for c in data.columns if 'CANCEL' in c.upper()]
         c1, c2, c3, c4 = st.columns(4)
         with c1:
             st.markdown(f'<div class="stat-box"><div class="stat-val">{len(data):,}</div><div class="stat-lbl">Total Flights</div></div>', unsafe_allow_html=True)
         with c2:
-            st.markdown(f'<div class="stat-box"><div class="stat-val">{data["AIRLINE"].nunique()}</div><div class="stat-lbl">Airlines</div></div>', unsafe_allow_html=True)
+            val = data[airline_col[0]].nunique() if airline_col else "N/A"
+            st.markdown(f'<div class="stat-box"><div class="stat-val">{val}</div><div class="stat-lbl">Airlines</div></div>', unsafe_allow_html=True)
         with c3:
-            st.markdown(f'<div class="stat-box"><div class="stat-val">{data["ROUTE"].nunique():,}</div><div class="stat-lbl">Unique Routes</div></div>', unsafe_allow_html=True)
+            val = f"{data[route_col[0]].nunique():,}" if route_col else "N/A"
+            st.markdown(f'<div class="stat-box"><div class="stat-val">{val}</div><div class="stat-lbl">Unique Routes</div></div>', unsafe_allow_html=True)
         with c4:
-            pct = data['CANCELLED'].mean() * 100
+            pct = data[cancel_col[0]].mean() * 100 if cancel_col else 0
             st.markdown(f'<div class="stat-box"><div class="stat-val">{pct:.1f}%</div><div class="stat-lbl">Cancellation Rate</div></div>', unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True)
 

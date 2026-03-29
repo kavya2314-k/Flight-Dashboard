@@ -74,6 +74,11 @@ def load_data():
 try:
     data = load_data()
     data_ready = True
+    # Rename columns to standard names (handles any case/space issues)
+    col_map = {}
+    for col in data.columns:
+        col_map[col] = col.strip().upper()
+    data.columns = [col.strip().upper() for col in data.columns]
 except Exception as e:
     data_ready = False
     st.error(f"❌ Error loading data: {e}")

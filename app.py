@@ -27,20 +27,7 @@ def load_data():
     if not os.path.exists(dest):
         gdown.download(f"https://drive.google.com/uc?id={FILE_ID}", dest, quiet=False)
 
-    cols = [
-        'AIRLINE','MONTH','ARRIVAL_DELAY','DEPARTURE_DELAY',
-        'CANCELLED','CANCELLATION_REASON',
-        'ORIGIN_AIRPORT','DESTINATION_AIRPORT',
-        'AIR_SYSTEM_DELAY','SECURITY_DELAY',
-        'AIRLINE_DELAY','LATE_AIRCRAFT_DELAY','WEATHER_DELAY',
-        'DISTANCE'
-    ]
-
-    df = pd.read_parquet(dest, columns=cols)
-
-    # Memory optimization
-    for col in df.select_dtypes(include=['float64','int64']).columns:
-        df[col] = pd.to_numeric(df[col], downcast='float')
+    df = pd.read_parquet(dest)
 
     df.columns = df.columns.str.strip().str.upper()
 
@@ -56,22 +43,11 @@ def load_data():
     return df
 
 
-# LOAD DATA
 data = load_data()
 
-# ─────────────────────────────────────────────
-# OPTIONAL SAMPLING CONTROL
-# ─────────────────────────────────────────────
-use_sample = st.sidebar.checkbox("Use Sample Data (faster)", value=True)
-
-if use_sample:
+# OPTIONAL SAMPLE (disable if you want exact results)
+if st.sidebar.checkbox("Use Sample Data (faster)", value=True):
     data = data.sample(200000, random_state=42)
-
-# ─────────────────────────────────────────────
-# IMPORT MILESTONE FILES
-# ─────────────────────────────────────────────
-from milestone2 import all_charts as milestone2_charts
-from milestone3 import all_charts as milestone3_charts
 
 # ─────────────────────────────────────────────
 # UI
@@ -92,29 +68,42 @@ if page == "Overview":
     col3.metric("Routes", data["ROUTE"].nunique())
 
 # ─────────────────────────────────────────────
-# MILESTONE 2
+# MILESTONE 2 (AUTO RUN SCRIPT)
 # ─────────────────────────────────────────────
 elif page == "Milestone 2":
 
-    st.header("Milestone 2 Visualizations")
+    st.header("Milestone 2 Charts")
 
-    charts = milestone2_charts(data)
+    import matplotlib.pyplot as plt
 
-    for i, fig in enumerate(charts):
-        st.subheader(f"Chart {i+1}")
+    # Inject data into global namespace so script can use it
+    globals()['data'] = data
+
+    # Execute your milestone file
+    exec(open("milestone2.py").read())
+
+    # Show all generated plots
+    figs = [plt.figure(n) for n in plt.get_fignums()]
+
+    for fig in figs:
         st.pyplot(fig)
         plt.close(fig)
 
 # ─────────────────────────────────────────────
-# MILESTONE 3
+# MILESTONE 3 (AUTO RUN SCRIPT)
 # ─────────────────────────────────────────────
 elif page == "Milestone 3":
 
-    st.header("Milestone 3 Visualizations")
+    st.header("Milestone 3 Charts")
 
-    charts = milestone3_charts(data)
+    import matplotlib.pyplot as plt
 
-    for i, fig in enumerate(charts):
-        st.subheader(f"Chart {i+1}")
+    globals()['data'] = data
+
+    exec(open("milestone3.py").read())
+
+    figs = [plt.figure(n) for n in plt.get_fignums()]
+
+    for fig in figs:
         st.pyplot(fig)
         plt.close(fig)

@@ -3,8 +3,8 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-import warnings
 import os
+import warnings
 
 warnings.filterwarnings("ignore")
 
@@ -14,10 +14,10 @@ st.set_page_config(
     layout="wide"
 )
 
-# ─────────────────────────────────────────────────────────────
-# DATA LOADER (OPTIMIZED + FIXED)
-# ─────────────────────────────────────────────────────────────
-@st.cache_data(show_spinner="⏳ Loading dataset… please wait.")
+# ─────────────────────────────────────────────
+# DATA LOADER
+# ─────────────────────────────────────────────
+@st.cache_data(show_spinner="⏳ Loading dataset...")
 def load_data():
     import gdown
 
@@ -27,7 +27,6 @@ def load_data():
     if not os.path.exists(dest):
         gdown.download(f"https://drive.google.com/uc?id={FILE_ID}", dest, quiet=False)
 
-    # ✅ LOAD ONLY REQUIRED COLUMNS (CRITICAL)
     cols = [
         'AIRLINE','MONTH','ARRIVAL_DELAY','DEPARTURE_DELAY',
         'CANCELLED','CANCELLATION_REASON',
@@ -39,21 +38,16 @@ def load_data():
 
     df = pd.read_parquet(dest, columns=cols)
 
-    # ✅ MEMORY OPTIMIZATION
+    # Memory optimization
     for col in df.select_dtypes(include=['float64','int64']).columns:
         df[col] = pd.to_numeric(df[col], downcast='float')
 
-    # ✅ SAMPLE DATA (VERY IMPORTANT FOR STREAMLIT)
-    df = df.sample(200000, random_state=42)
-
     df.columns = df.columns.str.strip().str.upper()
 
-    # CREATE ROUTE COLUMN
     df['ROUTE'] = df['ORIGIN_AIRPORT'] + "_" + df['DESTINATION_AIRPORT']
 
-    # CLEAN CANCELLATION LABELS
     df['CANCELLATION_REASON'] = df['CANCELLATION_REASON'].replace({
-        'A': 'Airline/Carrier',
+        'A': 'Airline',
         'B': 'Weather',
         'C': 'NAS',
         'D': 'Security'
@@ -63,31 +57,32 @@ def load_data():
 
 
 # LOAD DATA
-try:
-    data = load_data()
-    data_ready = True
-except Exception as e:
-    data_ready = False
-    st.error(f"❌ Error loading data: {e}")
+data = load_data()
 
+# ─────────────────────────────────────────────
+# OPTIONAL SAMPLING CONTROL
+# ─────────────────────────────────────────────
+use_sample = st.sidebar.checkbox("Use Sample Data (faster)", value=True)
 
-# ─────────────────────────────────────────────────────────────
+if use_sample:
+    data = data.sample(200000, random_state=42)
+
+# ─────────────────────────────────────────────
+# IMPORT MILESTONE FILES
+# ─────────────────────────────────────────────
+from milestone2 import all_charts as milestone2_charts
+from milestone3 import all_charts as milestone3_charts
+
+# ─────────────────────────────────────────────
 # UI
-# ─────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────
 st.title("✈️ AirFly Insights Dashboard")
 
-if not data_ready:
-    st.stop()
+page = st.sidebar.radio("Navigation", ["Overview", "Milestone 2", "Milestone 3"])
 
-# SIDEBAR NAV
-page = st.sidebar.radio(
-    "Navigation",
-    ["Overview", "Milestone 2", "Milestone 3"]
-)
-
-# ─────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────
 # OVERVIEW
-# ─────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────
 if page == "Overview":
 
     col1, col2, col3 = st.columns(3)
@@ -96,78 +91,30 @@ if page == "Overview":
     col2.metric("Airlines", data["AIRLINE"].nunique())
     col3.metric("Routes", data["ROUTE"].nunique())
 
-# ─────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────
 # MILESTONE 2
-# ─────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────
 elif page == "Milestone 2":
 
-    st.subheader("Top Airlines by Flight Volume")
+    st.header("Milestone 2 Visualizations")
 
-    top_airlines = data['AIRLINE'].value_counts().head(10)
+    charts = milestone2_charts(data)
 
-    fig, ax = plt.subplots()
-    sns.barplot(x=top_airlines.values, y=top_airlines.index, ax=ax)
+    for i, fig in enumerate(charts):
+        st.subheader(f"Chart {i+1}")
+        st.pyplot(fig)
+        plt.close(fig)
 
-    for i, v in enumerate(top_airlines.values):
-        ax.text(v, i, f"{v:,}", va='center')
-
-    st.pyplot(fig)
-
-
-    st.subheader("Monthly Flight Trend")
-
-    monthly = data.groupby('MONTH').size()
-
-    fig, ax = plt.subplots()
-    ax.plot(monthly.index, monthly.values, marker='o')
-
-    st.pyplot(fig)
-
-
-    st.subheader("Delay Distribution")
-
-    fig, ax = plt.subplots()
-    sns.histplot(data['ARRIVAL_DELAY'], bins=50, ax=ax)
-
-    st.pyplot(fig)
-
-
-# ─────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────
 # MILESTONE 3
-# ─────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────
 elif page == "Milestone 3":
 
-    st.subheader("Cancellation Reasons")
+    st.header("Milestone 3 Visualizations")
 
-    cancel_counts = data['CANCELLATION_REASON'].value_counts()
+    charts = milestone3_charts(data)
 
-    fig, ax = plt.subplots()
-    sns.barplot(x=cancel_counts.index, y=cancel_counts.values, ax=ax)
-
-    for i, v in enumerate(cancel_counts.values):
-        ax.text(i, v, f"{v:,}", ha='center')
-
-    st.pyplot(fig)
-
-
-    st.subheader("Cancellation by Month")
-
-    pivot = data.pivot_table(
-        index='MONTH',
-        columns='CANCELLATION_REASON',
-        values='CANCELLED',
-        aggfunc='sum'
-    )
-
-    fig, ax = plt.subplots()
-    sns.heatmap(pivot, annot=True, fmt=".0f", cmap="coolwarm", ax=ax)
-
-    st.pyplot(fig)
-
-
-    st.subheader("Weather Delay Distribution")
-
-    fig, ax = plt.subplots()
-    sns.violinplot(x=data['MONTH'], y=data['WEATHER_DELAY'], ax=ax)
-
-    st.pyplot(fig)
+    for i, fig in enumerate(charts):
+        st.subheader(f"Chart {i+1}")
+        st.pyplot(fig)
+        plt.close(fig)

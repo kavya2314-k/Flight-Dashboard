@@ -87,17 +87,7 @@ def load_data():
     df['MONTH'] = pd.to_numeric(df['MONTH'], errors='coerce').fillna(1).astype(int)
     
     return df
-```
 
-Also make sure your `requirements.txt` has:
-```
-streamlit
-pandas
-matplotlib
-seaborn
-numpy
-gdown
-pyarrow
 
     # Download from Google Drive
     gdown.download(f"https://drive.google.com/uc?id={FILE_ID}", csv_dest, quiet=False)

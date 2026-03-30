@@ -36,7 +36,6 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ── Sidebar ───────────────────────────────────────────────────────────────────
 with st.sidebar:
     st.markdown("## ✈️ AirFly Insights")
     st.markdown("**2015 US Domestic Flights**")
@@ -53,7 +52,6 @@ with st.sidebar:
     st.markdown("---")
     st.caption("Data: Kaggle Airlines Dataset · 5.8M flights")
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
 def obs(txt):
     st.markdown(f'<div class="obs">💡 <b>Observation:</b> {txt}</div>', unsafe_allow_html=True)
 
@@ -70,56 +68,20 @@ def load_data():
     import gdown
     FILE_ID = "1Xz4srzZ6mRK5GJJqyB3UY8WXQQCLdfrB"
     dest = "airline_preprocessed.parquet"
-    
     if not os.path.exists(dest):
         gdown.download(f"https://drive.google.com/uc?id={FILE_ID}", dest, quiet=False)
-    
     df = pd.read_parquet(dest)
     df.columns = df.columns.str.strip().str.upper()
-    
     if 'ROUTE' not in df.columns:
         df['ROUTE'] = df['ORIGIN_AIRPORT'].astype(str) + '_' + df['DESTINATION_AIRPORT'].astype(str)
-    
     for col in ['AIR_SYSTEM_DELAY','SECURITY_DELAY','AIRLINE_DELAY','LATE_AIRCRAFT_DELAY','WEATHER_DELAY']:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
-    
     df['MONTH'] = pd.to_numeric(df['MONTH'], errors='coerce').fillna(1).astype(int)
-    
-    return df
-
-
-    # Download from Google Drive
-    gdown.download(f"https://drive.google.com/uc?id={FILE_ID}", csv_dest, quiet=False)
-    df = pd.read_csv(csv_dest, low_memory=False)
-
-    # Fix column names
-    df.columns = df.columns.str.strip().str.upper()
-
-    # Fill delay nulls
-    for col in ['AIR_SYSTEM_DELAY','SECURITY_DELAY','AIRLINE_DELAY','LATE_AIRCRAFT_DELAY','WEATHER_DELAY']:
-        if col in df.columns:
-            df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
-
-    # Ensure ROUTE exists
-    if 'ROUTE' not in df.columns:
-        df['ROUTE'] = df['ORIGIN_AIRPORT'].astype(str) + '_' + df['DESTINATION_AIRPORT'].astype(str)
-
-    # Ensure MONTH is integer
-    df['MONTH'] = pd.to_numeric(df['MONTH'], errors='coerce').fillna(1).astype(int)
-
-    # Fix CANCELLATION_REASON — remove "Not Cancelled" for cancelled-only charts
     df['CANCELLATION_REASON'] = df['CANCELLATION_REASON'].replace({
         'A': 'Airline/Carrier', 'B': 'Weather',
         'C': 'National Aviation System', 'D': 'Security'
     })
-
-    # Save as parquet for next load
-    try:
-        df.to_parquet(dest, index=False)
-    except Exception:
-        pass
-
     return df
 
 try:
@@ -175,7 +137,6 @@ elif "Milestone 2" in page:
     if not data_ready:
         need_data()
 
-    # ── Chart 1: Top 10 Airlines by Flight Volume ─────────────────────────────
     hdr("1 · Top 10 Airlines by Flight Volume")
     top_airlines = data['AIRLINE'].value_counts().head(10)
     fig, ax = plt.subplots(figsize=(9, 5))
@@ -192,7 +153,6 @@ elif "Milestone 2" in page:
 
     st.markdown("<hr>", unsafe_allow_html=True)
 
-    # ── Chart 2: Monthly Flight Volume Trend ──────────────────────────────────
     hdr("2 · Busiest Months — Monthly Flight Volume Trend")
     monthly_flights = data.groupby('MONTH').size()
     fig, ax = plt.subplots(figsize=(10, 4))
@@ -206,11 +166,10 @@ elif "Milestone 2" in page:
     ax.grid(True, alpha=0.3)
     plt.tight_layout()
     show(fig)
-    obs("Summer months (Jun–Aug) carry the heaviest traffic peaking in July. February dips to the lowest — fewer calendar days and winter weather suppress demand.")
+    obs("Summer months (Jun–Aug) carry the heaviest traffic peaking in July. February dips to the lowest.")
 
     st.markdown("<hr>", unsafe_allow_html=True)
 
-    # ── Chart 3: Route Congestion vs Delay ───────────────────────────────────
     hdr("3 · Route Congestion vs Average Delay")
     route_stats = data.groupby('ROUTE').agg(
         ARRIVAL_DELAY=('ARRIVAL_DELAY','mean'),
@@ -227,11 +186,10 @@ elif "Milestone 2" in page:
     ax.set_ylabel("Average Arrival Delay (min)")
     plt.tight_layout()
     show(fig)
-    obs("High-volume routes do NOT equal high delays — the busiest corridors are operationally efficient. Low-frequency routes show the most variance in delays.")
+    obs("High-volume routes do NOT equal high delays — the busiest corridors are operationally efficient.")
 
     st.markdown("<hr>", unsafe_allow_html=True)
 
-    # ── Chart 4: Delay Distribution by Top Airlines (Boxplot) ────────────────
     hdr("4 · Delay Distribution by Top 5 Airlines")
     top5 = data['AIRLINE'].value_counts().head(5).index
     filtered = data[data['AIRLINE'].isin(top5)]
@@ -245,14 +203,12 @@ elif "Milestone 2" in page:
     ax.set_xlabel("Airline")
     ax.set_ylabel("Arrival Delay (Minutes)")
     ax.legend()
-    ax.tick_params(axis='x', rotation=0)
     plt.tight_layout()
     show(fig)
-    obs("Most median delays sit at or below zero — the majority of flights arrive on time or early. The boxes show where most delays are concentrated.")
+    obs("Most median delays sit at or below zero — the majority of flights arrive on time or early.")
 
     st.markdown("<hr>", unsafe_allow_html=True)
 
-    # ── Chart 5: Top 10 Busiest Routes ───────────────────────────────────────
     hdr("5 · Top 10 Busiest Routes")
     top_routes = data['ROUTE'].value_counts().head(10)
     fig, ax = plt.subplots(figsize=(10, 5))
@@ -263,12 +219,11 @@ elif "Milestone 2" in page:
     ax.invert_yaxis()
     plt.tight_layout()
     show(fig)
-    obs("SFO-LAX is the busiest corridor — short-haul high-frequency routes dominate the top 10. LAX appears in 7 out of 10 routes.")
+    obs("SFO-LAX is the busiest corridor — short-haul high-frequency routes dominate the top 10.")
 
     st.markdown("<hr>", unsafe_allow_html=True)
 
-    # ── Chart 6: Average Delay Causes by Airline (Stacked Bar — Minutes) ─────
-    hdr("6 · Average Delay Causes by Airline (Minutes)")
+    hdr("6 · Average Delay Causes by Airline (Stacked Bar)")
     cause_cols = ['AIR_SYSTEM_DELAY','SECURITY_DELAY','WEATHER_DELAY','AIRLINE_DELAY','LATE_AIRCRAFT_DELAY']
     available_causes = [c for c in cause_cols if c in data.columns]
     delay_causes = data.groupby('AIRLINE')[available_causes].mean().head(10)
@@ -281,11 +236,10 @@ elif "Milestone 2" in page:
     ax.legend(title="Delay Cause", bbox_to_anchor=(1.01, 1), loc='upper left')
     plt.tight_layout()
     show(fig)
-    obs("Late Aircraft Delay is the dominant cause across all airlines — a cascading effect where one delayed flight triggers the next throughout the day.")
+    obs("Late Aircraft Delay is the dominant cause — a cascading effect where one delayed flight triggers the next.")
 
     st.markdown("<hr>", unsafe_allow_html=True)
 
-    # ── Chart 7: Delay Cause % Breakdown ─────────────────────────────────────
     hdr("7 · Delay Cause % Breakdown by Airline")
     cause_labels_map = {
         'AIRLINE_DELAY':'Carrier','WEATHER_DELAY':'Weather',
@@ -312,11 +266,10 @@ elif "Milestone 2" in page:
     ax.tick_params(axis='x', rotation=30)
     plt.tight_layout()
     show(fig)
-    obs("Late Aircraft and Carrier delays together account for 70–80% of total delay. Security delay is negligible (<1%) for all carriers.")
+    obs("Late Aircraft and Carrier delays together account for 70-80% of total delay. Security delay is negligible (<1%).")
 
     st.markdown("<hr>", unsafe_allow_html=True)
 
-    # ── Chart 8: Weather Delay by Month ──────────────────────────────────────
     hdr("8 · Average Weather Delay by Month")
     weather_month = data.groupby('MONTH')['WEATHER_DELAY'].mean()
     fig, ax = plt.subplots(figsize=(10, 4))
@@ -330,11 +283,10 @@ elif "Milestone 2" in page:
     ax.grid(True, alpha=0.3)
     plt.tight_layout()
     show(fig)
-    obs("Weather delays peak in February (winter storms) and again in June–July (thunderstorm season). September–October are the most weather-stable months.")
+    obs("Weather delays peak in February and again in June-July (thunderstorm season). September-October are the most stable months.")
 
     st.markdown("<hr>", unsafe_allow_html=True)
 
-    # ── Chart 9: Arrival & Departure Delay Histograms ────────────────────────
     hdr("9 · Arrival & Departure Delay Distributions")
     col1, col2 = st.columns(2)
     with col1:
@@ -352,7 +304,6 @@ elif "Milestone 2" in page:
         plt.tight_layout()
         show(fig)
         st.caption(f"Early (<0): {(delay_arr<0).mean()*100:.1f}% | On-Time (0-15min): {((delay_arr>=0)&(delay_arr<=15)).mean()*100:.1f}% | Severe (>60min): {(delay_arr>60).mean()*100:.1f}%")
-
     with col2:
         delay_dep = data['DEPARTURE_DELAY'].dropna()
         delay_dep = delay_dep[(delay_dep >= -60) & (delay_dep <= 180)]
@@ -367,12 +318,10 @@ elif "Milestone 2" in page:
         plt.tight_layout()
         show(fig)
         st.caption(f"Mean: {delay_dep.mean():.1f} min | Median: {delay_dep.median():.1f} min")
-
-    obs("Most flights are on time or early. Mean >> Median confirms a right-skewed distribution — extreme delays pull the average up significantly.")
+    obs("Most flights are on time or early. Mean >> Median confirms a right-skewed distribution.")
 
     st.markdown("<hr>", unsafe_allow_html=True)
 
-    # ── Chart 10: Top 15 Airports by Departure Delay ─────────────────────────
     hdr("10 · Top 15 Airports with Highest Average Departure Delay")
     airport_delay = data[data['CANCELLED']==0].groupby('ORIGIN_AIRPORT').agg(
         avg_delay=('DEPARTURE_DELAY','mean'),
@@ -388,11 +337,10 @@ elif "Milestone 2" in page:
     ax.invert_yaxis()
     plt.tight_layout()
     show(fig)
-    obs("Mid-size congested airports show worse delays than major hubs — large airports have better ground crews, faster turnarounds and scheduling buffers.")
+    obs("Mid-size congested airports show worse delays than major hubs.")
 
     st.markdown("<hr>", unsafe_allow_html=True)
 
-    # ── Chart 11: Flight Distance vs Arrival Delay ────────────────────────────
     hdr("11 · Flight Distance vs Arrival Delay")
     if 'DISTANCE' in data.columns:
         sample = data[(data['ARRIVAL_DELAY'].between(-60,180)) & (data['CANCELLED']==0)].sample(10000, random_state=42)
@@ -414,13 +362,10 @@ elif "Milestone 2" in page:
         plt.tight_layout()
         show(fig)
         corr = sample['DISTANCE'].corr(sample['ARRIVAL_DELAY'])
-        obs(f"Longer flights tend to arrive closer to on-time (correlation: {corr:.3f}) — pilots can recover delays in the air on long routes. Short flights have highest delay variance.")
-    else:
-        st.warning("DISTANCE column not found in dataset.")
+        obs(f"Longer flights tend to arrive closer to on-time (correlation: {corr:.3f}) — pilots can recover delays in the air.")
 
     st.markdown("<hr>", unsafe_allow_html=True)
 
-    # ── Chart 12: Delay Severity Composition ─────────────────────────────────
     hdr("12 · Delay Severity Composition by Airline")
     data_tmp = data.copy()
     data_tmp['delay_severity'] = pd.cut(data_tmp['ARRIVAL_DELAY'],
@@ -443,12 +388,11 @@ elif "Milestone 2" in page:
 # ══════════════════════════════════════════════════════════════════════════════
 elif "Milestone 3" in page:
     st.markdown('<p class="page-title">🚫 Milestone 3 — Cancellations & Route Analysis</p>', unsafe_allow_html=True)
-    st.markdown('<p class="page-sub">Investigating where, why, and when flights are cancelled — and how routes perform.</p>', unsafe_allow_html=True)
+    st.markdown('<p class="page-sub">Investigating where, why, and when flights are cancelled.</p>', unsafe_allow_html=True)
 
     if not data_ready:
         need_data()
 
-    # Add season columns
     data['SEASON'] = data['MONTH'].apply(lambda m:
         'Winter' if m in [12,1,2] else 'Spring' if m in [3,4,5] else
         'Summer' if m in [6,7,8] else 'Fall')
@@ -456,7 +400,6 @@ elif "Milestone 3" in page:
         '1.Winter' if m in [12,1,2] else '2.Spring' if m in [3,4,5] else
         '3.Summer' if m in [6,7,8] else '4.Fall')
 
-    # ── Chart 1: Avg Delay on Top 10 Busiest Routes ───────────────────────────
     hdr("1 · Average Arrival Delay — Top 10 Busiest Routes")
     route_delay = data[data['CANCELLED']==0].groupby('ROUTE').agg(
         avg_delay=('ARRIVAL_DELAY','mean'),
@@ -468,17 +411,16 @@ elif "Milestone 3" in page:
     colors = ['#ef4444' if v > 5 else '#10b981' for v in route_delay_top['avg_delay']]
     ax.barh(route_delay_top['ROUTE'], route_delay_top['avg_delay'], color=colors, edgecolor='white')
     ax.axvline(0, color='black', linestyle='--', linewidth=0.8)
-    ax.set_title("Average Arrival Delay — Top 10 Busiest Routes\n(red = avg delayed >5min, green = on time or early)", fontsize=12, fontweight='bold')
+    ax.set_title("Average Arrival Delay — Top 10 Busiest Routes", fontsize=12, fontweight='bold')
     ax.set_xlabel("Avg Arrival Delay (minutes)")
     ax.set_ylabel("Route")
     ax.invert_yaxis()
     plt.tight_layout()
     show(fig)
-    obs("Busiest routes are NOT the most delayed — high frequency routes are operationally well managed. JFK routes consistently arrive early due to long flight time for delay recovery.")
+    obs("Busiest routes are NOT the most delayed — high frequency routes are operationally well managed.")
 
     st.markdown("<hr>", unsafe_allow_html=True)
 
-    # ── Chart 2: Top 10 Routes by Cancellation Rate ───────────────────────────
     hdr("2 · Top 10 Routes with Highest Cancellation Rate")
     route_cancel = data.groupby('ROUTE').agg(
         cancel_rate=('CANCELLED','mean'),
@@ -492,17 +434,16 @@ elif "Milestone 3" in page:
     bars = ax.barh(top10_cancel['ROUTE'], top10_cancel['cancel_pct'], color=colors, edgecolor='white')
     for bar, val in zip(bars, top10_cancel['cancel_pct']):
         ax.text(val+0.05, bar.get_y()+bar.get_height()/2, f'{val:.1f}%', va='center', fontsize=9)
-    ax.set_title("Top 10 Routes with Highest Cancellation Rate\n(routes with >1000 flights only)", fontsize=12, fontweight='bold')
+    ax.set_title("Top 10 Routes with Highest Cancellation Rate", fontsize=12, fontweight='bold')
     ax.set_xlabel("Cancellation Rate (%)")
     ax.set_ylabel("Route")
     ax.invert_yaxis()
     plt.tight_layout()
     show(fig)
-    obs("All top 10 routes are Northeast corridor short-haul connections. LGA appears in 6 out of 10 — its single-runway configuration makes it extremely vulnerable to weather disruption.")
+    obs("All top 10 routes are Northeast corridor short-haul connections — extremely vulnerable to weather disruption.")
 
     st.markdown("<hr>", unsafe_allow_html=True)
 
-    # ── Chart 3: Cancellation Reason Distribution ─────────────────────────────
     hdr("3 · Cancellation Reasons Distribution")
     cancel_only = data[(data['CANCELLED']==1) & (data['CANCELLATION_REASON'] != 'Not Cancelled')]
     cancel_counts = cancel_only['CANCELLATION_REASON'].value_counts()
@@ -516,11 +457,10 @@ elif "Milestone 3" in page:
     ax.set_ylabel("Number of Cancelled Flights")
     plt.tight_layout()
     show(fig)
-    obs("Weather is the #1 cancellation cause (~54%). Carrier issues are second — these are entirely preventable internal failures. Security cancellations are virtually negligible at only 22 flights.")
+    obs("Weather is the #1 cancellation cause. Security cancellations are virtually negligible.")
 
     st.markdown("<hr>", unsafe_allow_html=True)
 
-    # ── Chart 4: Cancellation Rate by Airline ─────────────────────────────────
     hdr("4 · Cancellation Rate by Airline")
     cancel_rate = data.groupby('AIRLINE')['CANCELLED'].mean().sort_values(ascending=False) * 100
     fig, ax = plt.subplots(figsize=(10, 5))
@@ -532,11 +472,10 @@ elif "Milestone 3" in page:
     ax.tick_params(axis='x', rotation=45)
     plt.tight_layout()
     show(fig)
-    obs("Envoy Air (MQ) has the highest cancellation rate (~5%) — nearly 3x the industry average. Hawaiian (HA) has the lowest — island routes leave no alternative when a flight is cancelled.")
+    obs("Envoy Air (MQ) has the highest cancellation rate. Hawaiian (HA) has the lowest.")
 
     st.markdown("<hr>", unsafe_allow_html=True)
 
-    # ── Chart 5: Cancellation Rate by Month ───────────────────────────────────
     hdr("5 · Cancellation Rate by Month")
     cancellation_rate = data.groupby('MONTH')['CANCELLED'].mean() * 100
     fig, ax = plt.subplots(figsize=(10, 5))
@@ -550,11 +489,10 @@ elif "Milestone 3" in page:
     ax.grid(True, alpha=0.3)
     plt.tight_layout()
     show(fig)
-    obs("February peaks at ~4.7% — worst month for cancellations due to winter storms. September–October hit yearly lows (~0.5%) — the safest months to fly.")
+    obs("February peaks at ~4.7% — worst month for cancellations. September-October hit yearly lows.")
 
     st.markdown("<hr>", unsafe_allow_html=True)
 
-    # ── Chart 6: Route × Month Heatmap ────────────────────────────────────────
     hdr("6 · Avg Arrival Delay by Route × Month (Heatmap)")
     top10_routes = data['ROUTE'].value_counts().head(10).index
     subset = data[data['ROUTE'].isin(top10_routes) & (data['CANCELLED']==0)]
@@ -570,30 +508,28 @@ elif "Milestone 3" in page:
     ax.set_ylabel("Route")
     plt.tight_layout()
     show(fig)
-    obs("ORD→LGA is red almost year-round — the most persistently delayed corridor. LAX→SFO spikes to 24.8 min in December — holiday surge on the busiest short-haul route. October is universally green.")
+    obs("ORD-LGA is red almost year-round. October is universally green — the best month to fly.")
 
     st.markdown("<hr>", unsafe_allow_html=True)
 
-    # ── Chart 7: Weather Delay by Season (Violin) ─────────────────────────────
-    hdr("7 · Weather Delay Distribution by Season")
+    hdr("7 · Weather Delay Distribution by Season (Violin)")
     weather_flights = data[(data['CANCELLED']==0) & (data['WEATHER_DELAY']>0) & (data['WEATHER_DELAY']<120)]
     fig, ax = plt.subplots(figsize=(11, 5))
     sns.violinplot(data=weather_flights, x='SEASON_SORT', y='WEATHER_DELAY',
                    hue='SEASON_SORT', palette='coolwarm', inner='box', legend=False, ax=ax)
     mean_val = weather_flights['WEATHER_DELAY'].mean()
     ax.axhline(mean_val, color='red', linestyle='--', label=f"Overall mean: {mean_val:.1f} min")
-    ax.set_title("Weather Delay Distribution by Season\n(flights with weather delay only)", fontsize=12, fontweight='bold')
+    ax.set_title("Weather Delay Distribution by Season", fontsize=12, fontweight='bold')
     ax.set_xlabel("Season")
     ax.set_ylabel("Weather Delay (minutes)")
     ax.set_xticklabels(['Winter','Spring','Summer','Fall'])
     ax.legend()
     plt.tight_layout()
     show(fig)
-    obs("Winter violin is widest and shifted highest — weather delays in winter are not only more frequent but more severe, with a longer upper tail than any other season.")
+    obs("Winter violin is widest and shifted highest — weather delays in winter are more frequent and more severe.")
 
     st.markdown("<hr>", unsafe_allow_html=True)
 
-    # ── Chart 8: Monthly Cancellation Trend by Reason ─────────────────────────
     hdr("8 · Monthly Cancellation Trend by Reason")
     monthly_cancel = data[data['CANCELLED']==1].groupby(
         ['MONTH','CANCELLATION_REASON']).size().unstack(fill_value=0)
@@ -608,11 +544,10 @@ elif "Milestone 3" in page:
     ax.legend(title="Reason", bbox_to_anchor=(1.01,1), loc='upper left')
     plt.tight_layout()
     show(fig)
-    obs("February dominates with 20,000+ cancellations driven entirely by weather. Carrier cancellations (green) stay flat year-round at ~2,500–3,500 — a constant internal problem unaffected by season.")
+    obs("February dominates with 20,000+ cancellations. Carrier cancellations stay flat year-round.")
 
     st.markdown("<hr>", unsafe_allow_html=True)
 
-    # ── Chart 9: Cancellation by Season ───────────────────────────────────────
     hdr("9 · Cancellation Reasons by Season")
     season_cancel = data[data['CANCELLED']==1].groupby(
         ['SEASON','CANCELLATION_REASON']).size().unstack(fill_value=0)
@@ -627,11 +562,10 @@ elif "Milestone 3" in page:
     ax.legend(title="Reason", bbox_to_anchor=(1.01,1), loc='upper left')
     plt.tight_layout()
     show(fig)
-    obs("Winter has 4x more cancellations than Fall — weather (grey) is the sole driver. Carrier cancellations remain proportionally equal across all seasons proving they are an internal operational issue.")
+    obs("Winter has 4x more cancellations than Fall. Carrier cancellations remain equal across all seasons.")
 
     st.markdown("<hr>", unsafe_allow_html=True)
 
-    # ── Chart 10: Arrival Delay by Airline (Violin) ────────────────────────────
     hdr("10 · Arrival Delay Distribution by Airline (Violin)")
     top6 = data['AIRLINE'].value_counts().head(6).index
     subset_v = data[data['AIRLINE'].isin(top6)]
@@ -646,9 +580,8 @@ elif "Milestone 3" in page:
     ax.legend()
     plt.tight_layout()
     show(fig)
-    obs("All airlines show median below 0 — most flights arrive early. Spirit and Frontier show wider upper bodies indicating higher concentration of moderate delays compared to Hawaiian and Alaska.")
+    obs("All airlines show median below 0 — most flights arrive early. Spirit and Frontier show wider upper bodies.")
 
-# ── Footer ────────────────────────────────────────────────────────────────────
 st.markdown("""
 <div style='text-align:center; color:#94a3b8; font-size:0.8rem; padding:2rem 0 1rem 0;'>
 ✈️ AirFly Insights · 2015 US Domestic Flights · Streamlit + Pandas + Matplotlib + Seaborn

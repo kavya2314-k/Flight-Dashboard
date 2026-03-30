@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import matplotlib
-matplotlib.use('Agg')  # Required for Streamlit
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import seaborn as sns
 import os
@@ -20,7 +20,7 @@ st.set_page_config(
 )
 
 # ─────────────────────────────────────────────
-# DATA LOADING (OPTIMIZED)
+# DATA LOADER
 # ─────────────────────────────────────────────
 @st.cache_data(show_spinner="⏳ Loading dataset...")
 def load_data():
@@ -32,7 +32,6 @@ def load_data():
     if not os.path.exists(dest):
         gdown.download(f"https://drive.google.com/uc?id={FILE_ID}", dest, quiet=False)
 
-    # Load only required columns (IMPORTANT)
     cols = [
         'AIRLINE','MONTH','ARRIVAL_DELAY','DEPARTURE_DELAY',
         'CANCELLED','CANCELLATION_REASON',
@@ -50,6 +49,7 @@ def load_data():
 
     # Cleaning
     df.columns = df.columns.str.strip().str.upper()
+
     df['ROUTE'] = df['ORIGIN_AIRPORT'] + "_" + df['DESTINATION_AIRPORT']
 
     df['CANCELLATION_REASON'] = df['CANCELLATION_REASON'].replace({
@@ -62,7 +62,7 @@ def load_data():
     return df
 
 
-# Load dataset
+# LOAD DATA
 data = load_data()
 
 # Sampling to prevent crash
@@ -81,20 +81,24 @@ page = st.sidebar.radio(
 )
 
 # ─────────────────────────────────────────────
-# SCRIPT RUNNER (FOR MILESTONE FILES)
+# SCRIPT RUNNER (FIXED PATH ISSUE)
 # ─────────────────────────────────────────────
 def run_script(file_name):
     plt.close('all')
 
     try:
-        # Inject variables so your old code works
+        # ✅ FIX: Absolute path handling
+        BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+        file_path = os.path.join(BASE_DIR, file_name)
+
+        # Inject variables for compatibility
         globals()['data'] = data
         globals()['df'] = data
 
-        # Execute file
-        exec(open(file_name).read())
+        # Execute script
+        exec(open(file_path).read())
 
-        # Capture all figures
+        # Capture plots
         figs = [plt.figure(n) for n in plt.get_fignums()]
 
         if not figs:
@@ -105,7 +109,7 @@ def run_script(file_name):
             plt.close(fig)
 
     except FileNotFoundError:
-        st.error(f"❌ File '{file_name}' not found. Upload it to repo.")
+        st.error(f"❌ File '{file_name}' not found at {file_path}")
     except Exception as e:
         st.error(f"❌ Error in {file_name}: {e}")
 

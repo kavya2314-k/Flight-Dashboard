@@ -68,19 +68,36 @@ def show(fig):
 @st.cache_data(show_spinner="⏳ Loading dataset… please wait.")
 def load_data():
     import gdown
-    FILE_ID = "1CJnrsH1m1D_hwjUsDDccByuXdrwVWLG8"
+    FILE_ID = "1Xz4srzZ6mRK5GJJqyB3UY8WXQQCLdfrB"
     dest = "airline_preprocessed.parquet"
-    csv_dest = "airline_preprocessed.csv"
+    
+    if not os.path.exists(dest):
+        gdown.download(f"https://drive.google.com/uc?id={FILE_ID}", dest, quiet=False)
+    
+    df = pd.read_parquet(dest)
+    df.columns = df.columns.str.strip().str.upper()
+    
+    if 'ROUTE' not in df.columns:
+        df['ROUTE'] = df['ORIGIN_AIRPORT'].astype(str) + '_' + df['DESTINATION_AIRPORT'].astype(str)
+    
+    for col in ['AIR_SYSTEM_DELAY','SECURITY_DELAY','AIRLINE_DELAY','LATE_AIRCRAFT_DELAY','WEATHER_DELAY']:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
+    
+    df['MONTH'] = pd.to_numeric(df['MONTH'], errors='coerce').fillna(1).astype(int)
+    
+    return df
+```
 
-    # Try parquet first
-    if os.path.exists(dest):
-        return pd.read_parquet(dest)
-
-    # Try CSV
-    if os.path.exists(csv_dest):
-        df = pd.read_csv(csv_dest, low_memory=False)
-        df.to_parquet(dest, index=False)
-        return df
+Also make sure your `requirements.txt` has:
+```
+streamlit
+pandas
+matplotlib
+seaborn
+numpy
+gdown
+pyarrow
 
     # Download from Google Drive
     gdown.download(f"https://drive.google.com/uc?id={FILE_ID}", csv_dest, quiet=False)

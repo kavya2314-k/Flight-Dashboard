@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import matplotlib
-matplotlib.use('Agg')   # 🔥 important for Streamlit
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import seaborn as sns
 import os
@@ -17,7 +17,7 @@ st.set_page_config(
 )
 
 # ─────────────────────────────────────────────
-# DATA LOADER (FIXED FOR MEMORY)
+# DATA LOADER
 # ─────────────────────────────────────────────
 @st.cache_data(show_spinner="⏳ Loading dataset...")
 def load_data():
@@ -29,7 +29,6 @@ def load_data():
     if not os.path.exists(dest):
         gdown.download(f"https://drive.google.com/uc?id={FILE_ID}", dest, quiet=False)
 
-    # 🔥 LOAD ONLY REQUIRED COLUMNS
     cols = [
         'AIRLINE','MONTH','ARRIVAL_DELAY','DEPARTURE_DELAY',
         'CANCELLED','CANCELLATION_REASON',
@@ -41,16 +40,14 @@ def load_data():
 
     df = pd.read_parquet(dest, columns=cols)
 
-    # 🔥 Reduce memory
+    # Memory optimization
     for col in df.select_dtypes(include=['float64','int64']).columns:
         df[col] = pd.to_numeric(df[col], downcast='float')
 
     df.columns = df.columns.str.strip().str.upper()
 
-    # Create route column
     df['ROUTE'] = df['ORIGIN_AIRPORT'] + "_" + df['DESTINATION_AIRPORT']
 
-    # Map cancellation reason
     df['CANCELLATION_REASON'] = df['CANCELLATION_REASON'].replace({
         'A': 'Airline',
         'B': 'Weather',
@@ -64,7 +61,7 @@ def load_data():
 # LOAD DATA
 data = load_data()
 
-# 🔥 CRITICAL: SAMPLE DATA TO PREVENT CRASH
+# Optional sampling (to avoid crash)
 use_sample = st.sidebar.checkbox("Use Sample Data (Recommended)", value=True)
 
 if use_sample:
@@ -89,26 +86,37 @@ if page == "Overview":
     col3.metric("Routes", data["ROUTE"].nunique())
 
 # ─────────────────────────────────────────────
+# FUNCTION TO RUN ANY SCRIPT SAFELY
+# ─────────────────────────────────────────────
+def run_script(file_name):
+
+    plt.close('all')
+
+    try:
+        # Inject BOTH variables (fixes df/data mismatch)
+        globals()['data'] = data
+        globals()['df'] = data
+
+        exec(open(file_name).read())
+
+        figs = [plt.figure(n) for n in plt.get_fignums()]
+
+        for fig in figs:
+            st.pyplot(fig)
+            plt.close(fig)
+
+    except Exception as e:
+        st.error(f"Error in {file_name}: {e}")
+
+
+# ─────────────────────────────────────────────
 # MILESTONE 2
 # ─────────────────────────────────────────────
 elif page == "Milestone 2":
 
     st.header("Milestone 2 Charts")
 
-    plt.close('all')  # 🔥 clear old plots
-
-    # Inject data into milestone file
-    globals()['data'] = data
-
-    # Run your file
-    exec(open("milestone2.py").read())
-
-    # Show all figures
-    figs = [plt.figure(n) for n in plt.get_fignums()]
-
-    for fig in figs:
-        st.pyplot(fig)
-        plt.close(fig)
+    run_script("milestone2.py")
 
 # ─────────────────────────────────────────────
 # MILESTONE 3
@@ -117,14 +125,4 @@ elif page == "Milestone 3":
 
     st.header("Milestone 3 Charts")
 
-    plt.close('all')
-
-    globals()['data'] = data
-
-    exec(open("milestone3.py").read())
-
-    figs = [plt.figure(n) for n in plt.get_fignums()]
-
-    for fig in figs:
-        st.pyplot(fig)
-        plt.close(fig)
+    run_script("milestone3.py")

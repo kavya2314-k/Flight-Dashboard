@@ -1,6 +1,8 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import matplotlib
+matplotlib.use('Agg')   # 🔥 important for Streamlit
 import matplotlib.pyplot as plt
 import seaborn as sns
 import os
@@ -15,7 +17,7 @@ st.set_page_config(
 )
 
 # ─────────────────────────────────────────────
-# DATA LOADER
+# DATA LOADER (FIXED FOR MEMORY)
 # ─────────────────────────────────────────────
 @st.cache_data(show_spinner="⏳ Loading dataset...")
 def load_data():
@@ -27,12 +29,28 @@ def load_data():
     if not os.path.exists(dest):
         gdown.download(f"https://drive.google.com/uc?id={FILE_ID}", dest, quiet=False)
 
-    df = pd.read_parquet(dest)
+    # 🔥 LOAD ONLY REQUIRED COLUMNS
+    cols = [
+        'AIRLINE','MONTH','ARRIVAL_DELAY','DEPARTURE_DELAY',
+        'CANCELLED','CANCELLATION_REASON',
+        'ORIGIN_AIRPORT','DESTINATION_AIRPORT',
+        'AIR_SYSTEM_DELAY','SECURITY_DELAY',
+        'AIRLINE_DELAY','LATE_AIRCRAFT_DELAY','WEATHER_DELAY',
+        'DISTANCE'
+    ]
+
+    df = pd.read_parquet(dest, columns=cols)
+
+    # 🔥 Reduce memory
+    for col in df.select_dtypes(include=['float64','int64']).columns:
+        df[col] = pd.to_numeric(df[col], downcast='float')
 
     df.columns = df.columns.str.strip().str.upper()
 
+    # Create route column
     df['ROUTE'] = df['ORIGIN_AIRPORT'] + "_" + df['DESTINATION_AIRPORT']
 
+    # Map cancellation reason
     df['CANCELLATION_REASON'] = df['CANCELLATION_REASON'].replace({
         'A': 'Airline',
         'B': 'Weather',
@@ -43,11 +61,14 @@ def load_data():
     return df
 
 
+# LOAD DATA
 data = load_data()
 
-# OPTIONAL SAMPLE (disable if you want exact results)
-if st.sidebar.checkbox("Use Sample Data (faster)", value=True):
-    data = data.sample(200000, random_state=42)
+# 🔥 CRITICAL: SAMPLE DATA TO PREVENT CRASH
+use_sample = st.sidebar.checkbox("Use Sample Data (Recommended)", value=True)
+
+if use_sample:
+    data = data.sample(150000, random_state=42)
 
 # ─────────────────────────────────────────────
 # UI
@@ -68,21 +89,21 @@ if page == "Overview":
     col3.metric("Routes", data["ROUTE"].nunique())
 
 # ─────────────────────────────────────────────
-# MILESTONE 2 (AUTO RUN SCRIPT)
+# MILESTONE 2
 # ─────────────────────────────────────────────
 elif page == "Milestone 2":
 
     st.header("Milestone 2 Charts")
 
-    import matplotlib.pyplot as plt
+    plt.close('all')  # 🔥 clear old plots
 
-    # Inject data into global namespace so script can use it
+    # Inject data into milestone file
     globals()['data'] = data
 
-    # Execute your milestone file
+    # Run your file
     exec(open("milestone2.py").read())
 
-    # Show all generated plots
+    # Show all figures
     figs = [plt.figure(n) for n in plt.get_fignums()]
 
     for fig in figs:
@@ -90,13 +111,13 @@ elif page == "Milestone 2":
         plt.close(fig)
 
 # ─────────────────────────────────────────────
-# MILESTONE 3 (AUTO RUN SCRIPT)
+# MILESTONE 3
 # ─────────────────────────────────────────────
 elif page == "Milestone 3":
 
     st.header("Milestone 3 Charts")
 
-    import matplotlib.pyplot as plt
+    plt.close('all')
 
     globals()['data'] = data
 

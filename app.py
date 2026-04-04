@@ -60,8 +60,13 @@ sns.set_theme(style="whitegrid", font_scale=0.95)
 
 @st.cache_data(show_spinner="⏳ Loading dataset…")
 def load_data():
-    df = pd.read_parquet("airline_preprocessed.parquet")
-    return df
+    import gdown
+    FILE_ID = "1TE2fkLN_1dUpDcwDVBv-UqPOagP-0Xmf"
+    dest = "airline_preprocessed(1).parquet"
+    if not os.path.exists(dest):
+        gdown.download(f"https://drive.google.com/uc?id={FILE_ID}", dest, quiet=False)
+    df = pd.read_parquet(dest)
+    df.columns = df.columns.str.strip().str.upper()
 
 try:
     data = load_data()

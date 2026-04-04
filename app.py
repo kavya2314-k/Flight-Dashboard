@@ -62,7 +62,7 @@ sns.set_theme(style="whitegrid", font_scale=0.95)
 def load_data():
     import gdown
     FILE_ID = "1TE2fkLN_1dUpDcwDVBv-UqPOagP-0Xmf"
-    dest = "airline_preprocessed(1).parquet"
+    dest = "airline_preprocessed.parquet"
     if not os.path.exists(dest):
         gdown.download(f"https://drive.google.com/uc?id={FILE_ID}", dest, quiet=False)
     df = pd.read_parquet(dest)

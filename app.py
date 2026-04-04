@@ -39,7 +39,7 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("**Dataset**")
     st.caption("Source: Kaggle Airlines Dataset")
-    st.caption("5.8M flights · 31 columns · 2015")
+    st.caption("5.8M flights · 26 columns · 2015")
     st.markdown("---")
     st.markdown("**Tech Stack**")
     st.caption("Python · Pandas · Matplotlib · Seaborn · Streamlit")
@@ -67,6 +67,7 @@ def load_data():
         gdown.download(f"https://drive.google.com/uc?id={FILE_ID}", dest, quiet=False)
     df = pd.read_parquet(dest)
     df.columns = df.columns.str.strip().str.upper()
+    return df
 
 try:
     data = load_data()

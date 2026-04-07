@@ -2,7 +2,7 @@
 
 ##  Project Overview
 
-**Airfly Insights** is an interactive data analytics dashboard built using **Streamlit** to analyze airline performance and delay patterns. The project focuses on extracting meaningful insights from flight data to support better decision-making and operational understanding.
+**Airfly Insights** is an Exploratory Data Analyses project to analyze airline performance and delay patterns. The project focuses on extracting meaningful insights from flight data to support better decision-making and operational understanding.
 
 This application enables users to explore delay distributions, airline efficiency, route-level trends, and time-based performance metrics through an intuitive interface.
 

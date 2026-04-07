@@ -60,13 +60,14 @@ sns.set_theme(style="whitegrid", font_scale=0.95)
 
 @st.cache_data(show_spinner="⏳ Loading dataset…")
 def load_data():
-    import gdown
-    FILE_ID = "1TE2fkLN_1dUpDcwDVBv-UqPOagP-0Xmf"
-    dest = "airline_preprocessed.parquet"
-    if not os.path.exists(dest):
-        gdown.download(f"https://drive.google.com/uc?id={FILE_ID}", dest, quiet=False)
-    df = pd.read_parquet(dest)
+    df = pd.read_parquet("airline_preprocessed.parquet")
     df.columns = df.columns.str.strip().str.upper()
+    if 'ROUTE' not in df.columns:
+        df['ROUTE'] = df['ORIGIN_AIRPORT'].astype(str) + '_' + df['DESTINATION_AIRPORT'].astype(str)
+    for col in ['AIR_SYSTEM_DELAY','SECURITY_DELAY','AIRLINE_DELAY','LATE_AIRCRAFT_DELAY','WEATHER_DELAY']:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
+    df['MONTH'] = pd.to_numeric(df['MONTH'], errors='coerce').fillna(1).astype(int)
     return df
 
 try:
